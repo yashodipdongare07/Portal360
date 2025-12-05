@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Portal360</title>
+
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #121212;
+    color: white;
+  }
+  .category-select {
+    display: flex;
+    overflow-x: auto;
+    padding: 10px;
+    gap: 10px;
+    background: #1e1e1e;
+  }
+  .category {
+    padding: 10px 20px;
+    background: #333;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .category.active {
+    background: #007bff;
+  }
+  .news-card {
+    height: 90vh;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  .headline {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+  .desc {
+    font-size: 18px;
+    opacity: 0.8;
+    margin-bottom: 20px;
+  }
+  .timestamp {
+    font-size: 14px;
+    opacity: 0.7;
+    margin-bottom: 20px;
+  }
+  .source-btn {
+    background: #007bff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+  }
+</style>
+
+</head>
+<body>
+
+<div class="category-select" id="categories"></div>
+
+<div class="news-card" id="newsCard">
+  <div class="headline" id="headline">Loading...</div>
+  <div class="desc" id="desc"></div>
+  <div class="timestamp" id="timestamp"></div>
+  <a id="source" class="source-btn" target="_blank">Visit Source</a>
+</div>
+
+<script>
+let allNews = [];
+let filtered = [];
+let index = 0;
+let currentCategory = "";
+
+const apiURL = "https://script.google.com/macros/s/AKfycbyZCj-nVREVdH49TONXutPZ3xLi16PXKWvlkK8ASpGmfzTuuPNhVDt33hcjklUbEuNz/exec";
+
+// Load JSON
+fetch(apiURL)
+  .then(res => res.json())
+  .then(data => {
+    allNews = data;
+    loadCategories();
+  });
+
+// Build category buttons
+function loadCategories() {
+  const cats = [...new Set(allNews.map(n => n.Category))];
+  const catDiv = document.getElementById("categories");
+  catDiv.innerHTML = "";
+
+  cats.forEach(cat => {
+    const btn = document.createElement("div");
+    btn.className = "category";
+    btn.innerText = cat;
+    btn.onclick = () => selectCategory(cat, btn);
+    catDiv.appendChild(btn);
+  });
+}
+
+// Select category
+function selectCategory(cat, btn) {
+  document.querySelectorAll(".category").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  currentCategory = cat;
+  filtered = allNews.filter(n => n.Category === cat);
+  index = 0;
+  showNews();
+}
+
+// Show news inside card
+function showNews() {
+  if (!filtered.length) return;
+
+  const n = filtered[index];
+
+  document.getElementById("headline").innerText = n.Headline;
+  document.getElementById("desc").innerText = n.Description;
+  document.getElementById("timestamp").innerText = n.Timestamp;
+  document.getElementById("source").href = n.Source;
+}
+
+// Swipe (left/right)
+document.addEventListener("touchstart", startTouch, false);
+document.addEventListener("touchend", endTouch, false);
+let startX = 0;
+
+function startTouch(e) {
+  startX = e.changedTouches[0].screenX;
+}
+function endTouch(e) {
+  let endX = e.changedTouches[0].screenX;
+
+  if (endX < startX - 50) nextNews();
+  if (endX > startX + 50) prevNews();
+}
+
+// Next & Previous
+function nextNews() {
+  index = (index + 1) % filtered.length;
+  showNews();
+}
+function prevNews() {
+  index = (index - 1 + filtered.length) % filtered.length;
+  showNews();
+}
+</script>
+
+</body>
+</html>
